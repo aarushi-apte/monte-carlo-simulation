@@ -14,20 +14,27 @@ class weather_predictor():
 class runway_surface_predictor():
 
     def __init__(self):
-        self.runway_surface = random.choice(['dry','wet', 'snow', 'slush', 'non melting ice'], weights=(80, 10, 5, 5), k=1)
+        self.runway_surface = random.choice(['dry','wet', 'snow', 'slush', 'non melting ice'], weights=(70, 50, 5, 5), k=1)
 
     def get_runway_surface(self):
 
 
-class weight_predictor():
+class gross_weight_predictor():
 
+    #https://www.portofbellingham.com/DocumentCenter/View/7196/Revised-Runway-Length-Discussion-20171206?bidId=
     def __init__(self):
-        self.weight = random.choice(['dry','wet', 'snow', 'slush', 'non melting ice'], weights=(80, 10, 5, 5), k=1)
+        self.gross_weight = random.choice(['medium', 'light', 'heavy', 'super'], weights=(50, 25, 10), k=1)
 
 class altitude_predictor():
 
     def __init__(self):
         self.altitude = random.choice(['low', 'high' ], weights=(50, 25), k=1)
+
+
+class altitude_predictor():
+
+    def __init__(self):
+        self.altitude = random.choice(['headwind', 'tailwind', 'crosswind', 'gustwind' ], weights=(80, 40, 10, 8), k=1)
 
 
 
