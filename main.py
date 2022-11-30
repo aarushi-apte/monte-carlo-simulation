@@ -31,7 +31,7 @@ class AltitudePredictor:
     # The highest altitude airport in The US
     # https://www.boldmethod.com/blog/lists/2014/08/10-highest-airports-in-the-united-states/
     def __init__(self):
-        self.altitude = random.choice(['low', 'high' ], weights=(50, 25), k=1)
+        #self.altitude = random.choice(['low', 'high' ], weights=(50, 25), k=1)
         self.altitude =  random.randint(0, 9934)
     if altitude <= 8000:
         distance_percent = (altitude/1000) * 0.12
