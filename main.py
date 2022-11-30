@@ -26,10 +26,18 @@ class GrossWeightPredictor:
         self.gross_weight = random.choice(['medium', 'light', 'heavy', 'super'], weights=(50, 25, 10), k=1)
 
 class AltitudePredictor:
-
+    # The lowest non-negative altitude airport in The US
+    # https://www.boldmethod.com/blog/lists/2014/10/7-lowest-civilian-airports-us/
+    # The highest altitude airport in The US
+    # https://www.boldmethod.com/blog/lists/2014/08/10-highest-airports-in-the-united-states/
     def __init__(self):
         self.altitude = random.choice(['low', 'high' ], weights=(50, 25), k=1)
-
+        self.altitude =  random.randint(0, 9934)
+    if altitude <= 8000:
+        distance_percent = (altitude/1000) * 0.12
+    else:
+        distance_percent =  0.96
+        distance_percent = distance_percent - ((altitude-8000)/1000) * 0.20
 
 class WindPredictor:
 
