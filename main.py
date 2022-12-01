@@ -95,16 +95,33 @@ def altitude_calculation():
         distance_percent = distance_percent - ((altitude - 8000) / 1000) * 0.20
 
 def effect_by_temp(temp):
-    pass
+    distance_percent = (temp/10) * .10
+    return distance_percent
 
 def effect_by_runway_surface(runway_surface):
-    pass
+    if runway_surface == "dry":
+        distance_percent = 1
+    elif runway_surface == "wet":
+        distance_percent = 1.3
+    elif runway_surface == "snow":
+        distance_percent = 1.65
+    elif runway_surface == "slush":
+        distance_percent = 2.15
+    else:
+        distance_percent = 4.0
+    return  distance_percent
+
 
 def effect_by_gross_weight(gross_weight):
     pass
 
 def effect_by_altitude(altitude):
-    pass
+    if altitude <= 8000:
+        distance_percent = (altitude / 1000) * 0.12
+    else:
+        distance_percent = 0.96
+        distance_percent = distance_percent - ((altitude - 8000) / 1000) * 0.20
+    return distance_percent
 
 def effect_by_wind(wind):
     pass
