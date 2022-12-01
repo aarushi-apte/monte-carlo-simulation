@@ -3,7 +3,7 @@ import random
 import pandas as pd
 
 
-class randomAttrituteSelector():
+class RandomAttributeSelector():
 
     def __init__(self, temp, runway_surface, gross_weight, altitude, wind):
         self.temp = temp.random_temperature()
@@ -32,13 +32,13 @@ class TemperaturePredictor:
 class RunwaySurfacePredictor:
 
     def __init__(self):
-        self.runway_surface = random.choices(['dry', 'wet', 'snow', 'slush', 'non melting ice'],
+        self.runway_surface = random.choices(['normal', 'wet', 'standing_water', 'snow', 'icy'],
                                              weights=(80, 60, 40, 30, 22), k=1)
         self.change_count = 0
 
     def random_runway_surface(self):
         if self.change_count % 10 == 0:
-            self.runway_surface = random.choices(['dry', 'wet', 'snow', 'slush', 'non melting ice'],
+            self.runway_surface = random.choices(['normal', 'wet', 'standing_water', 'snow', 'icy'],
                                              weights=(80, 60, 40, 30, 22), k=1)
 
         self.change_count += 1
@@ -48,13 +48,15 @@ class RunwaySurfacePredictor:
 class GrossWeightPredictor:
 
     # https://www.portofbellingham.com/DocumentCenter/View/7196/Revised-Runway-Length-Discussion-20171206?bidId=
+    # Boeing 737-800 is the most widely used hence the max weightage -
+    # https://en.wikipedia.org/wiki/Boeing_737#:~:text=The%20%2D800%20replaced%20directly%20the,primarily%20with%20the%20Airbus%20A320.
     def __init__(self):
-        self.gross_weight = random.choices(['light', 'medium', 'heavy', 'super'], weights=(50, 40, 30, 20), k=1)
+        self.gross_weight = random.choices(['light', 'medium', 'heavy', 'super'], weights=(40, 50, 30, 20), k=1)
         self.change_count = 0
 
     def random_gross_weight(self):
         if self.change_count % 3 == 0:
-            self.gross_weight = random.choices(['medium', 'light', 'heavy', 'super'], weights=(50, 40, 30, 20), k=1)
+            self.gross_weight = random.choices(['light', 'medium', 'heavy', 'super'], weights=(40, 50, 30, 20), k=1)
 
         self.change_count += 1
         return self.gross_weight[0]
@@ -98,22 +100,53 @@ def effect_by_temp(temp):
     distance_percent = (temp/10) * .10
     return distance_percent
 
+
 def effect_by_runway_surface(runway_surface):
-    if runway_surface == "dry":
-        distance_percent = 1
+    if runway_surface == "normal":
+        distance_percent = 1.01
     elif runway_surface == "wet":
-        distance_percent = 1.3
-    elif runway_surface == "snow":
-        distance_percent = 1.65
-    elif runway_surface == "slush":
-        distance_percent = 2.15
+        distance_percent = 1.013
+    elif runway_surface == "standing_water":
+        distance_percent = 1.0165
+    elif runway_surface == "snowy":
+        distance_percent = 1.0215
     else:
-        distance_percent = 4.0
-    return  distance_percent
+        distance_percent = 1.04
+    return distance_percent
 
 
-def effect_by_gross_weight(gross_weight):
-    pass
+def effect_by_gross_weight(mean_weight, gross_weight):
+    # Weight limitations - https://simpleflying.com/boeing-737-family-variants-weight-differences/
+
+    # Boeing 737-700
+    if gross_weight == "light":
+        min_weight = 83000
+        max_weight = 154500
+        flight_weight = random.randint(min_weight, max_weight)
+    # Boeing 737-800
+    elif gross_weight == "medium":
+        min_weight = 91300
+        max_weight = 174200
+        flight_weight = random.randint(min_weight, max_weight)
+    # Boeing 737-900
+    elif gross_weight == "heavy":
+        min_weight = 93680
+        max_weight = 187679
+        flight_weight = random.randint(min_weight, max_weight)
+    # Boeing 737-900ER
+    else:
+        min_weight = 98495
+        max_weight = 187700
+        flight_weight = random.randint(min_weight, max_weight)
+
+    weight = flight_weight - min_weight
+
+    # https://www.experimentalaircraft.info/flight-planning/aircraft-performance-7.php
+    if weight > 0:
+        weight_percent = (weight * 100) / mean_weight
+        distance_percent = (weight_percent * 2) / 100
+    return distance_percent
+
 
 def effect_by_altitude(altitude):
     if altitude <= 8000:
@@ -123,7 +156,8 @@ def effect_by_altitude(altitude):
         distance_percent = distance_percent - ((altitude - 8000) / 1000) * 0.20
     return distance_percent
 
-def effect_by_wind(wind):
+def effect_by_wind(wind, wind_speed):
+
     pass
 
 
@@ -151,7 +185,7 @@ if __name__ == '__main__':
     wind = WindPredictor()
 
     for times in range(1, 5001):
-        randomSelector = randomAttrituteSelector(temp, runway_surface, gross_weight, altitude, wind)
+        randomSelector = RandomAttributeSelector(temp, runway_surface, gross_weight, altitude, wind)
         randomAttributeMap = randomSelector.__dict__
         effect_by_temp = effect_by_temp(randomAttributeMap['temp'])
         effect_by_runway_surface = effect_by_runway_surface(randomAttributeMap['runway_surface'])
