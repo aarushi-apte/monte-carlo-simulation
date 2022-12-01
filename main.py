@@ -1,4 +1,4 @@
-import sys
+
 import random
 import pandas as pd
 
@@ -65,15 +65,17 @@ class GrossWeightPredictor:
 class AltitudePredictor:
     # The lowest non-negative altitude airport in The US
     # https://www.boldmethod.com/blog/lists/2014/10/7-lowest-civilian-airports-us/
-    # The highest altitude airport in The US
-    # https://www.boldmethod.com/blog/lists/2014/08/10-highest-airports-in-the-united-states/
+    # The highest altitude airport in The World
+    # https://en.wikipedia.org/wiki/List_of_highest_airports
+    # The lowest altitude airport in the world
+    # https://en.wikipedia.org/wiki/Bar_Yehuda_Airfield
     def __init__(self):
-        self.altitude = random.randint(0, 9934)
+        self.altitude = random.randint(-1240, 14472)
         self.change_count = 0
 
     def random_altitude(self):
         if self.change_count % 10 == 0:
-            self.altitude = random.randint(0, 9934)
+            self.altitude = random.randint(-1240, 14472)
 
         self.change_count += 1
         return self.altitude
