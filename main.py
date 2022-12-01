@@ -184,6 +184,10 @@ if __name__ == '__main__':
     altitude = AltitudePredictor()
     wind = WindPredictor()
 
+    hypo1_optimum_dist_header = ['temperature', 'runway_surface', 'gross_weight', 'altitude', 'wind', 'distance']
+    df_for_hypo1 = pd.DataFrame(columns=hypo1_optimum_dist_header)
+    hypo1_distance_list = []
+
     for times in range(1, 5001):
         randomSelector = RandomAttributeSelector(temp, runway_surface, gross_weight, altitude, wind)
         randomAttributeMap = randomSelector.__dict__
@@ -194,5 +198,11 @@ if __name__ == '__main__':
         effect_by_wind = effect_by_wind(randomAttributeMap['wind'])
         distance = meanDistance * effect_by_temp * effect_by_runway_surface * effect_by_gross_weight * effect_by_altitude * effect_by_wind
 
+        hypo1_distance_list.append(distance)
+
+        df_data = [randomAttributeMap['temp'],randomAttributeMap['runway_surface'], randomAttributeMap['gross_weight'], randomAttributeMap['altitude'],
+                     randomAttributeMap['wind'], distance]
+        columns = pd.Series(df_data, index=df_for_hypo1.columns)
+        df_for_hypo1 = df_for_hypo1.append(columns, ignore_index=True)
 
 
