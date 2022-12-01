@@ -85,7 +85,7 @@ class WindPredictor:
         self.wind = []
 
     def random_wind(self):
-        self.wind = random.choices(['headwind', 'tailwind', 'crosswind', 'gustwind'], weights=(80, 40, 10, 8), k=1)
+        self.wind = random.choices(['headwind', 'tailwind', 'crosswind', 'gust'], weights=(80, 40, 10, 8), k=1)
         return self.wind[0]
 
 
@@ -156,9 +156,26 @@ def effect_by_altitude(altitude):
         distance_percent = distance_percent - ((altitude - 8000) / 1000) * 0.20
     return distance_percent
 
-def effect_by_wind(wind, wind_speed):
 
-    pass
+def effect_by_wind(wind, wind_speed):
+    # https://www.aviation.govt.nz/assets/publications/gaps/Take-off-and-landing-performance.pdf
+    if wind == "headwind":
+        max_headwind = 20
+        wind_speed = random.randint(0, max_headwind)
+        total_percent = 1.5 * wind_speed
+        distance_percent = (100 - total_percent) / 100
+    elif wind == "tailwind":
+        possible_values = [5,10]
+        wind_speed = random.choice(possible_values)
+        if wind_speed == 5:
+            distance_percent = 1.25
+        else:
+            distance_percent =  1.55
+    elif wind == "crosswind":
+        pass
+    else:
+        pass
+    return distance_percent
 
 
 if __name__ == '__main__':
