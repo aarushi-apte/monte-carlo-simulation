@@ -5,12 +5,13 @@ import pandas as pd
 
 class RandomAttributeSelector():
 
-    def __init__(self, temp, runway_surface, gross_weight, altitude, wind):
+    def __init__(self, temp, runway_surface, gross_weight, altitude, wind, gradient):
         self.temp = temp.random_temperature()
         self.runway_surface = runway_surface.random_runway_surface()
         self.gross_weight = gross_weight.random_gross_weight()
         self.altitude = altitude.random_altitude()
         self.wind = wind.random_wind()
+        self.gradient = gradient.random_gradient()
 
 
 class TemperaturePredictor:
@@ -93,7 +94,7 @@ class GradientPredictor:
         self.gradient = random.uniform(0, 18.5)
         self.change_count = 0
 
-    def random_temperature(self):
+    def random_gradient(self):
         if self.change_count % 100 == 0:
             self.gradient = random.uniform(0, 18.5)
 
@@ -133,7 +134,7 @@ def effect_by_runway_surface(runway_surface):
     return distance_percent
 
 
-def effect_by_gross_weight(mean_weight, gross_weight):
+def effect_by_gross_weight(gross_weight):
     # Weight limitations - https://simpleflying.com/boeing-737-family-variants-weight-differences/
 
     # Boeing 737-700
@@ -161,8 +162,10 @@ def effect_by_gross_weight(mean_weight, gross_weight):
 
     # https://www.experimentalaircraft.info/flight-planning/aircraft-performance-7.php
     if weight > 0:
-        weight_percent = (weight * 100) / mean_weight
+        weight_percent = (weight * 100) / min_weight
         distance_percent = (weight_percent * 2) / 100
+    else:
+        distance_percent = 0
     return distance_percent
 
 
@@ -217,19 +220,6 @@ if __name__ == '__main__':
 
     meanDistance = 6000
 
-    weight_input = input(
-        "Hi, Please inout the weight from the below chooses to get the optimum distance of take off - \n1) light and fully filled \n"
-        "2) light and medium filled \n"
-        "3) light and lightly filled \n"
-        "4)medium and fully filled \n"
-        "5)medium and medium filled \n"
-        "6)medium and lightly filled \n"
-        "7)heavy and fully filled \n"
-        "8)heavy and medium filled \n"
-        "9)heavy and lightly filled \n"
-        "10)super and fully filled \n"
-        "11)super and medium filled \n"
-        "12)super and lightly filled \n")
     temp = TemperaturePredictor()
     runway_surface = RunwaySurfacePredictor()
     gross_weight = GrossWeightPredictor()
@@ -245,15 +235,15 @@ if __name__ == '__main__':
     for times in range(1, 5001):
         randomSelector = RandomAttributeSelector(temp, runway_surface, gross_weight, altitude, wind, gradient)
         randomAttributeMap = randomSelector.__dict__
-        effect_by_temp = effect_by_temp(randomAttributeMap['temp'])
-        effect_by_runway_surface = effect_by_runway_surface(randomAttributeMap['runway_surface'])
-        effect_by_gross_weight = effect_by_gross_weight(randomAttributeMap['gross_weight'])
-        effect_by_altitude = effect_by_altitude(randomAttributeMap['altitude'])
-        effect_by_wind = effect_by_wind(randomAttributeMap['wind'])
-        effect_by_gradient = effect_by_gradient(randomAttributeMap['gradient'], randomAttributeMap['altitude'])
-        distance = (meanDistance * effect_by_temp * effect_by_runway_surface * effect_by_gross_weight * \
-                   effect_by_altitude * effect_by_wind) + effect_by_gradient
-
+        temp_effect = effect_by_temp(randomAttributeMap['temp'])
+        runway_surface_effect = effect_by_runway_surface(randomAttributeMap['runway_surface'])
+        gross_weight_effect = effect_by_gross_weight(randomAttributeMap['gross_weight'])
+        altitude_effect = effect_by_altitude(randomAttributeMap['altitude'])
+        wind_effect = effect_by_wind(randomAttributeMap['wind'])
+        gradient_effect = effect_by_gradient(randomAttributeMap['gradient'], randomAttributeMap['altitude'])
+        distance = (meanDistance * temp_effect * runway_surface_effect * gross_weight_effect * \
+                   altitude_effect * wind_effect)
+        distance = distance - 4954
         hypo1_distance_list.append(distance)
 
         df_data = [randomAttributeMap['temp'],randomAttributeMap['runway_surface'], randomAttributeMap['gross_weight'], randomAttributeMap['altitude'],
@@ -261,4 +251,11 @@ if __name__ == '__main__':
         columns = pd.Series(df_data, index=df_for_hypo1.columns)
         df_for_hypo1 = df_for_hypo1.append(columns, ignore_index=True)
 
+
+#notes-
+
+#Hypo1-
+#the optimum runway distance at a perticular year. (input - year /  output - takeoff distance)
+
+#the optimum runway distance at an extreme condition would not deffer by xyz ft or will not be more than xyz feet.
 
