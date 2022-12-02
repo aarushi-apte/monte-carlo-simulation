@@ -136,37 +136,30 @@ def effect_by_runway_surface(runway_surface):
 
 def effect_by_gross_weight(gross_weight):
     # Weight limitations - https://simpleflying.com/boeing-737-family-variants-weight-differences/
-
+    # https://www.experimentalaircraft.info/flight-planning/aircraft-performance-7.php
+    def weight_distance_calculator(min_weight, max_weight, min_runway):
+        flight_weight = random.randint(min_weight, max_weight)
+        weight = flight_weight - min_weight
+        if weight > 0:
+            weight_percent = (weight * 100) / min_weight
+            dist_to_add = ((weight_percent * 2) / 100) * min_runway
+        else:
+            dist_to_add = 0
+        return dist_to_add
     # Boeing 737-700
     if gross_weight == "light":
-        min_weight = 83000
-        max_weight = 154500
-        flight_weight = random.randint(min_weight, max_weight)
+        distance_add = weight_distance_calculator(83000, 154500, 5315)
     # Boeing 737-800
     elif gross_weight == "medium":
-        min_weight = 91300
-        max_weight = 174200
-        flight_weight = random.randint(min_weight, max_weight)
+        distance_add = weight_distance_calculator(91300, 174200, 6791)
     # Boeing 737-900
     elif gross_weight == "heavy":
-        min_weight = 93680
-        max_weight = 187679
-        flight_weight = random.randint(min_weight, max_weight)
+        distance_add = weight_distance_calculator(93680, 187679, 6791)
     # Boeing 737-900ER
     else:
-        min_weight = 98495
-        max_weight = 187700
-        flight_weight = random.randint(min_weight, max_weight)
+        distance_add = weight_distance_calculator(98495, 187700, 6791)
 
-    weight = flight_weight - min_weight
-
-    # https://www.experimentalaircraft.info/flight-planning/aircraft-performance-7.php
-    if weight > 0:
-        weight_percent = (weight * 100) / min_weight
-        distance_percent = (weight_percent * 2) / 100
-    else:
-        distance_percent = 0
-    return distance_percent
+    return distance_add
 
 
 def effect_by_altitude(altitude):
@@ -244,6 +237,7 @@ if __name__ == '__main__':
         distance = (meanDistance * temp_effect * runway_surface_effect * gross_weight_effect * \
                    altitude_effect * wind_effect)
         distance = distance - 4954
+
         hypo1_distance_list.append(distance)
 
         df_data = [randomAttributeMap['temp'],randomAttributeMap['runway_surface'], randomAttributeMap['gross_weight'], randomAttributeMap['altitude'],
