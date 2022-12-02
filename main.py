@@ -26,7 +26,7 @@ class TemperaturePredictor:
             self.temperature = random.randint(-55, 54)
 
         self.change_count += 1
-        return self.temperature[0]
+        return self.temperature
 
 
 class RunwaySurfacePredictor:
@@ -84,6 +84,21 @@ class WindPredictor:
     def random_wind(self):
         self.wind = random.choices(['headwind', 'tailwind', 'crosswind'], weights=(80, 40, 10), k=1)
         return self.wind[0]
+
+
+class GradientPredictor:
+
+    def __init__(self):
+        # https://www.insider.com/worlds-most-terrifying-airport-runways-2016-7#courchevel-airport-in-courchevel-france-has-an-incredibly-steep-runway-that-ends-in-a-sheer-rock-face-drop-14
+        self.gradient = random.uniform(0, 18.5)
+        self.change_count = 0
+
+    def random_temperature(self):
+        if self.change_count % 100 == 0:
+            self.gradient = random.uniform(0, 18.5)
+
+        self.change_count += 1
+        return self.gradient
 
 
 def effect_by_temp(temperature):
@@ -191,6 +206,13 @@ def effect_by_wind(wind):
     return distance_percent
 
 
+def effect_by_gradient(runway_gradient, alt):
+    # https://www.portofbellingham.com/DocumentCenter/View/7196/Revised-Runway-Length-Discussion-20171206?bidId=
+    gradient_diff = (runway_gradient * alt) / 100
+    add_distance = gradient_diff * 10
+    return add_distance
+
+
 if __name__ == '__main__':
 
     meanDistance = 6000
@@ -213,25 +235,29 @@ if __name__ == '__main__':
     gross_weight = GrossWeightPredictor()
     altitude = AltitudePredictor()
     wind = WindPredictor()
+    gradient = GradientPredictor()
 
-    hypo1_optimum_dist_header = ['temperature', 'runway_surface', 'gross_weight', 'altitude', 'wind', 'distance']
+    hypo1_optimum_dist_header = ['temperature', 'runway_surface', 'gross_weight', 'altitude', 'wind', 'distance',
+                                 'gradient']
     df_for_hypo1 = pd.DataFrame(columns=hypo1_optimum_dist_header)
     hypo1_distance_list = []
 
     for times in range(1, 5001):
-        randomSelector = RandomAttributeSelector(temp, runway_surface, gross_weight, altitude, wind)
+        randomSelector = RandomAttributeSelector(temp, runway_surface, gross_weight, altitude, wind, gradient)
         randomAttributeMap = randomSelector.__dict__
         effect_by_temp = effect_by_temp(randomAttributeMap['temp'])
         effect_by_runway_surface = effect_by_runway_surface(randomAttributeMap['runway_surface'])
         effect_by_gross_weight = effect_by_gross_weight(randomAttributeMap['gross_weight'])
         effect_by_altitude = effect_by_altitude(randomAttributeMap['altitude'])
         effect_by_wind = effect_by_wind(randomAttributeMap['wind'])
-        distance = meanDistance * effect_by_temp * effect_by_runway_surface * effect_by_gross_weight * effect_by_altitude * effect_by_wind
+        effect_by_gradient = effect_by_gradient(randomAttributeMap['gradient'], randomAttributeMap['altitude'])
+        distance = (meanDistance * effect_by_temp * effect_by_runway_surface * effect_by_gross_weight * \
+                   effect_by_altitude * effect_by_wind) + effect_by_gradient
 
         hypo1_distance_list.append(distance)
 
         df_data = [randomAttributeMap['temp'],randomAttributeMap['runway_surface'], randomAttributeMap['gross_weight'], randomAttributeMap['altitude'],
-                     randomAttributeMap['wind'], distance]
+                     randomAttributeMap['wind'], randomAttributeMap['gradient'], distance]
         columns = pd.Series(df_data, index=df_for_hypo1.columns)
         df_for_hypo1 = df_for_hypo1.append(columns, ignore_index=True)
 
