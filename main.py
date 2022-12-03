@@ -1,45 +1,46 @@
-
+import sys
 import random
 import pandas as pd
 
 
 class RandomAttributeSelector():
 
-    def __init__(self, temp, runway_surface, gross_weight, altitude, wind):
+    def __init__(self, temp, runway_surface, gross_weight, altitude, wind, gradient):
         self.temp = temp.random_temperature()
         self.runway_surface = runway_surface.random_runway_surface()
         self.gross_weight = gross_weight.random_gross_weight()
         self.altitude = altitude.random_altitude()
         self.wind = wind.random_wind()
+        self.gradient = gradient.random_gradient()
 
 
 class TemperaturePredictor:
 
     def __init__(self):
-        self.temperature = random.choices(['sunny', 'cloudy', 'rainy', 'snowy', 'foggy', 'thunder'],
-                                          weights=(80, 50, 40, 10, 5, 5), k=1)
+        # https://www.washingtonpost.com/news/capital-weather-gang/wp/2018/07/27/sometimes-its-too-hot-for-airplanes-to-fly-heres-why/#:~:text=Every%20plane%20has%20a%20different,at%20more%20than%20174%2C200%20pounds.
+        # https://www.cntraveler.com/stories/2016-06-20/its-so-hot-some-planes-cant-fly-heres-why
+        self.temperature = random.randint(-55, 54)
         self.change_count = 0
 
     def random_temperature(self):
         if self.change_count % 200 == 0:
-            self.temperature = random.choices(['sunny', 'cloudy', 'rainy', 'snowy', 'foggy', 'thunder'],
-                                              weights=(80, 50, 40, 10, 5, 5), k=1)
+            self.temperature = random.randint(-55, 54)
 
         self.change_count += 1
-        return self.temperature[0]
+        return self.temperature
 
 
 class RunwaySurfacePredictor:
 
     def __init__(self):
-        self.runway_surface = random.choices(['normal', 'wet', 'standing_water', 'snow', 'icy'],
-                                             weights=(80, 60, 40, 30, 22), k=1)
+        self.runway_surface = random.choices(['normal', 'wet', 'standing_water', 'snow', 'icy'], weights=(80, 60, 40,
+                                                                                                          30, 22), k=1)
         self.change_count = 0
 
     def random_runway_surface(self):
         if self.change_count % 10 == 0:
             self.runway_surface = random.choices(['normal', 'wet', 'standing_water', 'snow', 'icy'],
-                                             weights=(80, 60, 40, 30, 22), k=1)
+                                                 weights=(80, 60, 40, 30, 22), k=1)
 
         self.change_count += 1
         return self.runway_surface[0]
@@ -63,19 +64,14 @@ class GrossWeightPredictor:
 
 
 class AltitudePredictor:
-    # The lowest non-negative altitude airport in The US
-    # https://www.boldmethod.com/blog/lists/2014/10/7-lowest-civilian-airports-us/
-    # The highest altitude airport in The World
-    # https://en.wikipedia.org/wiki/List_of_highest_airports
-    # The lowest altitude airport in the world
-    # https://en.wikipedia.org/wiki/Bar_Yehuda_Airfield
+    # # https://en.wikipedia.org/wiki/List_of_highest_airports
     def __init__(self):
-        self.altitude = random.randint(-1240, 14472)
+        self.altitude = random.randint(0, 14472)
         self.change_count = 0
 
     def random_altitude(self):
         if self.change_count % 10 == 0:
-            self.altitude = random.randint(-1240, 14472)
+            self.altitude = random.randint(0, 14472)
 
         self.change_count += 1
         return self.altitude
@@ -87,141 +83,173 @@ class WindPredictor:
         self.wind = []
 
     def random_wind(self):
-        self.wind = random.choices(['headwind', 'tailwind', 'crosswind', 'gust'], weights=(80, 40, 10, 8), k=1)
+        self.wind = random.choices(['headwind', 'tailwind', 'crosswind'], weights=(80, 40, 10), k=1)
         return self.wind[0]
 
 
-def altitude_calculation():
-    if altitude <= 8000:
-        distance_percent = (altitude / 1000) * 0.12
-    else:
-        distance_percent = 0.96
-        distance_percent = distance_percent - ((altitude - 8000) / 1000) * 0.20
+class GradientPredictor:
 
-def effect_by_temp(temp):
-    distance_percent = (temp/10) * .10
+    def __init__(self):
+        # https://www.insider.com/worlds-most-terrifying-airport-runways-2016-7#courchevel-airport-in-courchevel-france-has-an-incredibly-steep-runway-that-ends-in-a-sheer-rock-face-drop-14
+        self.gradient = random.uniform(0, 18.5)
+        self.change_count = 0
+
+    def random_gradient(self):
+        if self.change_count % 100 == 0:
+            self.gradient = random.uniform(0, 18.5)
+
+        self.change_count += 1
+        return self.gradient
+
+
+def effect_by_temp(temperature):
+    # https://www.experimentalaircraft.info/flight-planning/aircraft-performance-7.php
+    isa_base = 15
+    if temperature < 15:
+        temp_diff = abs(abs(temperature) - isa_base)
+        distance_percent = 1 - (temp_diff / 100)
+    elif temperature > 15:
+        temp_diff = temperature - isa_base
+        distance_percent = 1 + (temp_diff / 100)
+    else:
+        distance_percent = 0
     return distance_percent
 
 
 def effect_by_runway_surface(runway_surface):
     if runway_surface == "normal":
-        distance_percent = 1.01
+        distance_percent = 0
     elif runway_surface == "wet":
         distance_percent = 1.013
     elif runway_surface == "standing_water":
-        distance_percent = 1.0165
+        # https://stackoverflow.com/questions/6088077/how-to-get-a-random-number-between-a-float-range
+        perc = random.uniform(2, 2.4)
+        distance_percent = 1 + (perc / 100)
     elif runway_surface == "snowy":
-        distance_percent = 1.0215
+        perc = random.uniform(1.6, 1.7)
+        distance_percent = 1 + (perc / 100)
     else:
-        distance_percent = 1.04
+        perc = random.uniform(3.5, 4.5)
+        distance_percent = 1 + (perc / 100)
     return distance_percent
 
 
-def effect_by_gross_weight(mean_weight, gross_weight):
+def effect_by_gross_weight(gross_weight):
     # Weight limitations - https://simpleflying.com/boeing-737-family-variants-weight-differences/
-
+    # https://www.experimentalaircraft.info/flight-planning/aircraft-performance-7.php
+    def weight_distance_calculator(min_weight, max_weight, min_runway):
+        flight_weight = random.randint(min_weight, max_weight)
+        weight = flight_weight - min_weight
+        if weight > 0:
+            weight_percent = (weight * 100) / min_weight
+            dist_to_add = ((weight_percent * 2) / 100) * min_runway
+        else:
+            dist_to_add = 0
+        return dist_to_add
     # Boeing 737-700
     if gross_weight == "light":
-        min_weight = 83000
-        max_weight = 154500
-        flight_weight = random.randint(min_weight, max_weight)
+        distance_add = weight_distance_calculator(83000, 154500, 5315)
     # Boeing 737-800
     elif gross_weight == "medium":
-        min_weight = 91300
-        max_weight = 174200
-        flight_weight = random.randint(min_weight, max_weight)
+        distance_add = weight_distance_calculator(91300, 174200, 6791)
     # Boeing 737-900
     elif gross_weight == "heavy":
-        min_weight = 93680
-        max_weight = 187679
-        flight_weight = random.randint(min_weight, max_weight)
+        distance_add = weight_distance_calculator(93680, 187679, 6791)
     # Boeing 737-900ER
     else:
-        min_weight = 98495
-        max_weight = 187700
-        flight_weight = random.randint(min_weight, max_weight)
+        distance_add = weight_distance_calculator(98495, 187700, 6791)
 
-    weight = flight_weight - min_weight
-
-    # https://www.experimentalaircraft.info/flight-planning/aircraft-performance-7.php
-    if weight > 0:
-        weight_percent = (weight * 100) / mean_weight
-        distance_percent = (weight_percent * 2) / 100
-    return distance_percent
+    return distance_add
 
 
 def effect_by_altitude(altitude):
+    # https://www.mountainflying.com/pages/mountain-flying/rule_of_thumb.html
     if altitude <= 8000:
-        distance_percent = (altitude / 1000) * 0.12
+        distance_percent = ((altitude / 1000) * 0.12) + 1
     else:
-        distance_percent = 0.96
-        distance_percent = distance_percent - ((altitude - 8000) / 1000) * 0.20
+        distance_percent = 1.96
+        distance_percent = (distance_percent + ((altitude - 8000) / 1000) * 0.20)
     return distance_percent
 
 
-def effect_by_wind(wind, wind_speed):
+def effect_by_wind(wind):
     # https://www.aviation.govt.nz/assets/publications/gaps/Take-off-and-landing-performance.pdf
+    def calculating_wind(max_wind):
+        speed = random.randint(0, max_wind)
+        return speed
+
     if wind == "headwind":
-        max_headwind = 20
-        wind_speed = random.randint(0, max_headwind)
+        wind_speed = calculating_wind(20)
         total_percent = 1.5 * wind_speed
         distance_percent = (100 - total_percent) / 100
+
     elif wind == "tailwind":
-        possible_values = [5,10]
-        wind_speed = random.choice(possible_values)
-        if wind_speed == 5:
+        wind_speed = calculating_wind(10)
+        if wind_speed <= 5:
             distance_percent = 1.25
         else:
-            distance_percent =  1.55
+            distance_percent = 1.55
+    # https://pilotworkshop.com/tips/quick-crosswind-calculation/
     elif wind == "crosswind":
-        pass
-    else:
-        pass
+        angle_value = [0.17, 0.25, 0.34, 0.5, 0.75, 1]
+        crosswind_angle = random.choice(angle_value)
+        wind_speed = calculating_wind(35)
+        crosswind = wind_speed * crosswind_angle
+        if crosswind > 0:
+            distance_percent = 0.85
+        else:
+            distance_percent = 0
     return distance_percent
+
+
+def effect_by_gradient(runway_gradient, alt):
+    # https://www.portofbellingham.com/DocumentCenter/View/7196/Revised-Runway-Length-Discussion-20171206?bidId=
+    gradient_diff = (runway_gradient * alt) / 100
+    add_distance = gradient_diff * 10
+    return add_distance
 
 
 if __name__ == '__main__':
 
     meanDistance = 6000
 
-    weight_input = input(
-        "Hi, Please inout the weight from the below chooses to get the optimum distance of take off - \n1) light and fully filled \n"
-        "2) light and medium filled \n"
-        "3) light and lightly filled \n"
-        "4)medium and fully filled \n"
-        "5)medium and medium filled \n"
-        "6)medium and lightly filled \n"
-        "7)heavy and fully filled \n"
-        "8)heavy and medium filled \n"
-        "9)heavy and lightly filled \n"
-        "10)super and fully filled \n"
-        "11)super and medium filled \n"
-        "12)super and lightly filled \n")
     temp = TemperaturePredictor()
     runway_surface = RunwaySurfacePredictor()
     gross_weight = GrossWeightPredictor()
     altitude = AltitudePredictor()
     wind = WindPredictor()
+    gradient = GradientPredictor()
 
-    hypo1_optimum_dist_header = ['temperature', 'runway_surface', 'gross_weight', 'altitude', 'wind', 'distance']
+    hypo1_optimum_dist_header = ['temperature', 'runway_surface', 'gross_weight', 'altitude', 'wind', 'distance',
+                                 'gradient']
     df_for_hypo1 = pd.DataFrame(columns=hypo1_optimum_dist_header)
     hypo1_distance_list = []
 
     for times in range(1, 5001):
-        randomSelector = RandomAttributeSelector(temp, runway_surface, gross_weight, altitude, wind)
+        randomSelector = RandomAttributeSelector(temp, runway_surface, gross_weight, altitude, wind, gradient)
         randomAttributeMap = randomSelector.__dict__
-        effect_by_temp = effect_by_temp(randomAttributeMap['temp'])
-        effect_by_runway_surface = effect_by_runway_surface(randomAttributeMap['runway_surface'])
-        effect_by_gross_weight = effect_by_gross_weight(randomAttributeMap['gross_weight'])
-        effect_by_altitude = effect_by_altitude(randomAttributeMap['altitude'])
-        effect_by_wind = effect_by_wind(randomAttributeMap['wind'])
-        distance = meanDistance * effect_by_temp * effect_by_runway_surface * effect_by_gross_weight * effect_by_altitude * effect_by_wind
+        temp_effect = effect_by_temp(randomAttributeMap['temp'])
+        runway_surface_effect = effect_by_runway_surface(randomAttributeMap['runway_surface'])
+        gross_weight_effect = effect_by_gross_weight(randomAttributeMap['gross_weight'])
+        altitude_effect = effect_by_altitude(randomAttributeMap['altitude'])
+        wind_effect = effect_by_wind(randomAttributeMap['wind'])
+        gradient_effect = effect_by_gradient(randomAttributeMap['gradient'], randomAttributeMap['altitude'])
+        distance = (meanDistance * temp_effect * runway_surface_effect * gross_weight_effect * \
+                   altitude_effect * wind_effect)
+        distance = distance - 4954
 
         hypo1_distance_list.append(distance)
 
         df_data = [randomAttributeMap['temp'],randomAttributeMap['runway_surface'], randomAttributeMap['gross_weight'], randomAttributeMap['altitude'],
-                     randomAttributeMap['wind'], distance]
+                     randomAttributeMap['wind'], randomAttributeMap['gradient'], distance]
         columns = pd.Series(df_data, index=df_for_hypo1.columns)
         df_for_hypo1 = df_for_hypo1.append(columns, ignore_index=True)
 
+
+#notes-
+
+#Hypo1-
+#the optimum runway distance at a perticular year. (input - year /  output - takeoff distance)
+
+#the optimum runway distance at an extreme condition would not deffer by xyz ft or will not be more than xyz feet.
 
