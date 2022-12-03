@@ -70,7 +70,7 @@ class AltitudePredictor:
         self.change_count = 0
 
     def random_altitude(self):
-        if self.change_count % 10 == 0:
+        if self.change_count % 1 == 0:
             self.altitude = random.randint(0, 14472)
 
         self.change_count += 1
@@ -95,8 +95,8 @@ class GradientPredictor:
         self.change_count = 0
 
     def random_gradient(self):
-        if self.change_count % 100 == 0:
-            self.gradient = random.uniform(0, 18.5)
+        if self.change_count % 10 == 0:
+            self.gradient = random.randint(50, 100)
 
         self.change_count += 1
         return self.gradient
@@ -139,9 +139,9 @@ def effect_by_gross_weight(gross_weight):
     # https://www.experimentalaircraft.info/flight-planning/aircraft-performance-7.php
     def weight_distance_calculator(min_weight, max_weight, min_runway):
         flight_weight = random.randint(min_weight, max_weight)
-        weight = flight_weight - min_weight
-        if weight > 0:
-            weight_percent = (weight * 100) / min_weight
+        weight_diff = flight_weight - min_weight
+        if weight_diff > 0:
+            weight_percent = weight_diff / min_weight
             dist_to_add = ((weight_percent * 2) / 100) * min_runway
         else:
             dist_to_add = 0
@@ -164,11 +164,15 @@ def effect_by_gross_weight(gross_weight):
 
 def effect_by_altitude(altitude):
     # https://www.mountainflying.com/pages/mountain-flying/rule_of_thumb.html
-    if altitude <= 8000:
-        distance_percent = ((altitude / 1000) * 0.12) + 1
-    else:
-        distance_percent = 1.96
-        distance_percent = (distance_percent + ((altitude - 8000) / 1000) * 0.20)
+    # if altitude <= 8000:
+    #     distance_percent = ((altitude / 1000) * 0.12)
+    # else:
+    #     distance_percent = 0.96
+    #     distance_percent = (distance_percent + ((altitude - 8000) / 1000) * 0.20)
+    # distance_to_add = distance_percent * 4954
+    # return distance_to_add
+
+    distance_percent = (0.07 * (altitude/985)) + 1
     return distance_percent
 
 
@@ -202,16 +206,16 @@ def effect_by_wind(wind):
     return distance_percent
 
 
-def effect_by_gradient(runway_gradient, alt):
+def effect_by_gradient(runway_gradient):
     # https://www.portofbellingham.com/DocumentCenter/View/7196/Revised-Runway-Length-Discussion-20171206?bidId=
-    gradient_diff = (runway_gradient * alt) / 100
-    add_distance = gradient_diff * 10
-    return add_distance
+
+    distance_to_add = runway_gradient * 10
+    return distance_to_add
 
 
 if __name__ == '__main__':
 
-    meanDistance = 6000
+    # meanDistance = 6000
 
     temp = TemperaturePredictor()
     runway_surface = RunwaySurfacePredictor()
@@ -228,15 +232,20 @@ if __name__ == '__main__':
     for times in range(1, 5001):
         randomSelector = RandomAttributeSelector(temp, runway_surface, gross_weight, altitude, wind, gradient)
         randomAttributeMap = randomSelector.__dict__
+
+        if randomAttributeMap['gross_weight'] == 'light':
+            min_distance = 5315
+        else:
+            min_distance = 6791
+
         temp_effect = effect_by_temp(randomAttributeMap['temp'])
         runway_surface_effect = effect_by_runway_surface(randomAttributeMap['runway_surface'])
         gross_weight_effect = effect_by_gross_weight(randomAttributeMap['gross_weight'])
         altitude_effect = effect_by_altitude(randomAttributeMap['altitude'])
         wind_effect = effect_by_wind(randomAttributeMap['wind'])
-        gradient_effect = effect_by_gradient(randomAttributeMap['gradient'], randomAttributeMap['altitude'])
-        distance = (meanDistance * temp_effect * runway_surface_effect * gross_weight_effect * \
-                   altitude_effect * wind_effect)
-        distance = distance - 4954
+        gradient_effect = effect_by_gradient(randomAttributeMap['gradient'])
+        distance = (min_distance * temp_effect * runway_surface_effect * wind_effect * altitude_effect
+                    ) + gross_weight_effect + gradient_effect
 
         hypo1_distance_list.append(distance)
 
