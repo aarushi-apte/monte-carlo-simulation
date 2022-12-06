@@ -264,11 +264,11 @@ if __name__ == '__main__':
     hypo2_gross_weight_effect = effect_by_gross_weight(randomAttributeMap['gross_weight'])
     hypo2_altitude_effect = effect_by_altitude(14472)
     hypo2_wind_effect = effect_by_wind('tailwind')
-    hypo2_gradient_effect = effect_by_gradient(randomAttributeMap['gradient'])
+    hypo2_gradient_effect = effect_by_gradient(random.randint(95, 100))
     hypo2_distance = (min_distance * temp_effect * runway_surface_effect * wind_effect * altitude_effect
                 ) + gross_weight_effect + gradient_effect
     max_change_at_extreme = (hypo2_distance - min_distance)/min_distance * 100
-    print(max_change_at_extreme)
+    print("The runway length for this flight, under extreme conditions, would change by a percentage of ", round(max_change_at_extreme,2))
 
 
 # notes-
