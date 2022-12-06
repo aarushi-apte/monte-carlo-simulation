@@ -94,8 +94,7 @@ class WindPredictor:
 class GradientPredictor:
 
     def __init__(self):
-        # https://www.insider.com/worlds-most-terrifying-airport-runways-2016-7#courchevel-airport-in-courchevel-france-has-an-incredibly-steep-runway-that-ends-in-a-sheer-rock-face-drop-14
-        self.gradient = random.uniform(0, 18.5)
+        self.gradient = random.uniform(50, 100)
         self.change_count = 0
 
     def random_gradient(self):
@@ -259,6 +258,18 @@ if __name__ == '__main__':
     df_for_hypo1.to_csv('hypo1.csv')
 
     print(sum(hypo1_distance_list) / len(hypo1_distance_list))
+
+    hypo2_temp_effect = effect_by_temp(40)
+    hypo2_runway_surface_effect = effect_by_runway_surface('icy')
+    hypo2_gross_weight_effect = effect_by_gross_weight(randomAttributeMap['gross_weight'])
+    hypo2_altitude_effect = effect_by_altitude(14472)
+    hypo2_wind_effect = effect_by_wind('tailwind')
+    hypo2_gradient_effect = effect_by_gradient(randomAttributeMap['gradient'])
+    hypo2_distance = (min_distance * temp_effect * runway_surface_effect * wind_effect * altitude_effect
+                ) + gross_weight_effect + gradient_effect
+    max_change_at_extreme = (hypo2_distance - min_distance)/min_distance * 100
+    print(max_change_at_extreme)
+
 
 # notes-
 
