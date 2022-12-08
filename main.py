@@ -1,3 +1,4 @@
+import math
 import random
 import pandas as pd
 from geographiclib.geodesic import Geodesic
@@ -243,6 +244,32 @@ def mc_simulation(randomAttributeMap):
           ) + gross_weight_effect + gradient_effect
     return ld, randomAttributeMap
 
+def get_nearest_accomodating_airport(curr_pos_lat, curr_pos_long):
+    nearest_airport = 0
+
+    for index, row in airport_df.iterrows():
+        airport_loc = row['Geographic Location']
+        airport_altitude = row['Elevation(ft)']
+        runway_lenght = row['Length (ft)']
+
+        lat_long = airport_loc.split(' ')
+        airport_lat, airport_long = float(create_lat_long(lat_long[0][:-1])) * get_sign(lat_long[0][-1]), float(
+            create_lat_long(lat_long[1][:-1])) * get_sign(lat_long[1][-1])
+
+        geoAns = geod.Inverse(airport_lat, airport_long, curr_pos_lat, curr_pos_long)
+        dist_btw_currpos_and_airport = float(geoAns['s12']) / 1000
+
+        #change temp by 10deg range, altitude fixed, runway_surface fixed, gross_weight fixed, random gradient
+        randomSelector = RandomAttributeSelector(temp, runway_surface, gross_weight, altitude, wind, gradient)
+        randomAttributeMap = randomSelector.__dict__
+        ld, randomAttributeMap = mc_simulation(randomAttributeMap)
+
+        if runway_lenght*0.6 > ld:
+            if dist_btw_currpos_and_airport < nearest_airport:
+                nearest_airport = dist_btw_currpos_and_airport
+
+    return nearest_airport
+
 
 if __name__ == '__main__':
 
@@ -283,52 +310,62 @@ if __name__ == '__main__':
 
     # Hypo 2
 
-    random_lat, random_long = random_direction()
-    airports_in_vicinity_df_header = airport_df.columns
-    airports_in_vicinity_df = pd.DataFrame(columns=airports_in_vicinity_df_header)
+    hypo2_header = ['arrival_lat', 'arrival_long', 'destination_lat', 'destination_long', 'curr_lat', 'curr_long',
+                    'nearest_airport_distance']
 
-    hypo2_header = ['temperature', 'runway_surface', 'gross_weight', 'altitude', 'wind', 'gradient',
-                    'airports_within_vicinity', 'accommodating_in_this_condition']
     df_for_hypo2 = pd.DataFrame(columns=hypo2_header)
+
+    takeoff_lat = 40.1
+    takeoff_long = 116.6
+    destination_lat = 37.6
+    destination_long = -122.4
+
+
+    l = geod.InverseLine(takeoff_lat, takeoff_long, destination_lat, destination_long)
+    ds = 100e3;
+    n = int(math.ceil(l.s13 / ds))
+    for i in range(n + 1):
+        if i == 0:
+            print("curr_lat curr_long")
+        s = min(ds * i, l.s13)
+        g = l.Position(s, Geodesic.STANDARD | Geodesic.LONG_UNROLL)
+        curr_pos_lat = g['lat2']
+        curr_pos_long = g['lon2']
+        distance_to_nearest_airport  = get_nearest_accomodating_airport(curr_pos_lat, curr_pos_long)
+        df_data= [takeoff_lat, takeoff_long, destination_lat, destination_long, curr_pos_lat, curr_pos_long, distance_to_nearest_airport]
+        columns = pd.Series(df_data, index=df_for_hypo2.columns)
+        df_for_hypo2 = df_for_hypo2.append(columns, ignore_index=True)
+
+
+
+
+
 
     # 112.654kms when both engine fails
     # https://www.telegraph.co.uk/travel/travel-truths/can-a-plane-fly-with-no-one-engines/#:~:text=Flying%20at%20a%20typical%20altitude,miles%20before%20reaching%20the%20ground.
     # for 2500 tested with 100 random lat and long and took nearest 10 airports and found the avg distance
-    random_distance_available = random.randint(2000, 3500)
-    fixed_gross_weight = gross_weight.random_gross_weight()
 
-    for index, row in airport_df.iterrows():
-        airport_loc = row['Geographic Location']
-        lat_long = airport_loc.split(' ')
-        airport_lat, airport_long = float(create_lat_long(lat_long[0][:-1])) * get_sign(lat_long[0][-1]), float(
-            create_lat_long(lat_long[1][:-1])) * get_sign(lat_long[1][-1])
 
-        geoAns = geod.Inverse(airport_lat, airport_long, random_lat, random_long)
-        distance_btw_airports = float(geoAns['s12']) / 1000
 
-        if distance_btw_airports <= random_distance_available:
-            airports_in_vicinity_df = airports_in_vicinity_df.append(row, ignore_index=True)
+    # total_airport_in_vicinity = airports_in_vicinity_df.shape[0]
+    #
+    # for times in range(1, 101):
+    #     randomSelector = RandomAttributeSelector(temp, runway_surface, gross_weight, altitude, wind, gradient,
+    #                                              fixed_gross_weight,
+    #                                              False)
+    #     randomAttributeMap = randomSelector.__dict__
+    #     ld, randomAttributeMap = mc_simulation(randomAttributeMap)
+    #     accommodating_airport_in_this_condition = \
+    #     airports_in_vicinity_df[airports_in_vicinity_df['Length (ft)'] * .6 >= ld].shape[0]
+    #
+    #     df_data = [randomAttributeMap['temp'], randomAttributeMap['runway_surface'], randomAttributeMap['gross_weight'],
+    #                randomAttributeMap['altitude'],
+    #                randomAttributeMap['wind'], randomAttributeMap['gradient'], total_airport_in_vicinity,
+    #                accommodating_airport_in_this_condition]
+    #     columns = pd.Series(df_data, index=df_for_hypo2.columns)
+    #     df_for_hypo2 = df_for_hypo2.append(columns, ignore_index=True)
 
-    airports_in_vicinity_df.to_csv('airports_in_vicinity_df.csv')
-    total_airport_in_vicinity = airports_in_vicinity_df.shape[0]
-
-    for times in range(1, 101):
-        randomSelector = RandomAttributeSelector(temp, runway_surface, gross_weight, altitude, wind, gradient,
-                                                 fixed_gross_weight,
-                                                 False)
-        randomAttributeMap = randomSelector.__dict__
-        ld, randomAttributeMap = mc_simulation(randomAttributeMap)
-        accommodating_airport_in_this_condition = \
-        airports_in_vicinity_df[airports_in_vicinity_df['Length (ft)'] * .6 >= ld].shape[0]
-
-        df_data = [randomAttributeMap['temp'], randomAttributeMap['runway_surface'], randomAttributeMap['gross_weight'],
-                   randomAttributeMap['altitude'],
-                   randomAttributeMap['wind'], randomAttributeMap['gradient'], total_airport_in_vicinity,
-                   accommodating_airport_in_this_condition]
-        columns = pd.Series(df_data, index=df_for_hypo2.columns)
-        df_for_hypo2 = df_for_hypo2.append(columns, ignore_index=True)
-
-    df_for_hypo2.to_csv('hypo2.csv')
+    # df_for_hypo2.to_csv('hypo2.csv')
 
     # for times in range(1, 1001):
     #     ld, randomAttributeMap = mc_simulation(temp, runway_surface, gross_weight, altitude, wind, gradient)
