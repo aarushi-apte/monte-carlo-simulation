@@ -1,14 +1,20 @@
 import sys
 import random
 import pandas as pd
+from geographiclib.geodesic import Geodesic
+
+geod = Geodesic.WGS84
 
 
 class RandomAttributeSelector():
 
-    def __init__(self, temp, runway_surface, gross_weight, altitude, wind, gradient,year):
-        self.temp = temp.random_temperature(year)
+    def __init__(self, temp, runway_surface, gross_weight, altitude, wind, gradient, gross_weight_fixed, gross_weight_to_be_changed=False):
+        self.temp = temp.random_temperature()
         self.runway_surface = runway_surface.random_runway_surface()
-        self.gross_weight = gross_weight.random_gross_weight()
+        if gross_weight_to_be_changed:
+            self.gross_weight = gross_weight.random_gross_weight()
+        else:
+            self.gross_weight = gross_weight_fixed
         self.altitude = altitude.random_altitude()
         self.wind = wind.random_wind()
         self.gradient = gradient.random_gradient()
@@ -21,15 +27,10 @@ class TemperaturePredictor:
         # https://www.cntraveler.com/stories/2016-06-20/its-so-hot-some-planes-cant-fly-heres-why
         self.temperature = []
 
-    def random_temperature(self, year):
-        #min max temp in 2000
+    def random_temperature(self):
         minRange = -13
         maxRange = 40
 
-        #every decade an expected increase in 0.25Deg celsius
-        decade_diff = (year - 2000)/10
-        minRange += decade_diff * 0.25
-        maxRange += decade_diff * 0.25
         self.temperature = random.randint(int(minRange), int(maxRange))
         return self.temperature
 
@@ -68,6 +69,9 @@ class GrossWeightPredictor:
 
 
 class AltitudePredictor:
+    # choose from a dataset
+    # if not this should "meadiam of all 1000ft,  pert distribution.
+
     # # https://en.wikipedia.org/wiki/List_of_highest_airports
     def __init__(self):
         self.altitude = random.randint(0, 14472)
@@ -188,6 +192,7 @@ def effect_by_wind(wind):
             distance_percent = 1.25
         else:
             distance_percent = 1.55
+
     # https://pilotworkshop.com/tips/quick-crosswind-calculation/
     elif wind == "crosswind":
         angle_value = [0.17, 0.25, 0.34, 0.5, 0.75, 1]
@@ -208,11 +213,45 @@ def effect_by_gradient(runway_gradient):
     return distance_to_add
 
 
+def random_direction():
+    return (round(random.uniform(-90, 90), 5),
+            round(random.uniform(-180, 180), 5))
+
+
+def get_sign(direction):
+    if direction == 'W' or direction == 'S':
+        return -1
+    return 1
+
+
+def create_lat_long(lat_long):
+    return lat_long[:2] + '.' + lat_long[2:]
+
+
+def mc_simulation(randomAttributeMap):
+
+    if randomAttributeMap['gross_weight'] == 'light':
+        min_distance = 5315
+    else:
+        min_distance = 6791
+
+    temp_effect = effect_by_temp(randomAttributeMap['temp'])
+    runway_surface_effect = effect_by_runway_surface(randomAttributeMap['runway_surface'])
+    gross_weight_effect = effect_by_gross_weight(randomAttributeMap['gross_weight'])
+    altitude_effect = effect_by_altitude(randomAttributeMap['altitude'])
+    wind_effect = effect_by_wind(randomAttributeMap['wind'])
+    gradient_effect = effect_by_gradient(randomAttributeMap['gradient'])
+    ld = (min_distance * temp_effect * runway_surface_effect * wind_effect * altitude_effect
+          ) + gross_weight_effect + gradient_effect
+    return ld, randomAttributeMap
+
+
 if __name__ == '__main__':
 
-    year = int(input('Please type a year for which you would like to know the estimated mean take off distance.'
-                     '\nWe will randomise temperature, runway surface, gross weight, altitute of the airpord, wind and runway gradient.'))
+    # imported Df
+    airport_df = pd.read_excel("airport_info.xlsx")
 
+    # classes called
     temp = TemperaturePredictor()
     runway_surface = RunwaySurfacePredictor()
     gross_weight = GrossWeightPredictor()
@@ -220,60 +259,83 @@ if __name__ == '__main__':
     wind = WindPredictor()
     gradient = GradientPredictor()
 
-    hypo1_optimum_dist_header = ['temperature', 'runway_surface', 'gross_weight', 'altitude', 'wind', 'distance',
-                                 'gradient']
-    df_for_hypo1 = pd.DataFrame(columns=hypo1_optimum_dist_header)
-    hypo1_distance_list = []
+    # Hypo 1
 
-    for times in range(1, 5001):
-        randomSelector = RandomAttributeSelector(temp, runway_surface, gross_weight, altitude, wind, gradient, year)
+    hypo1_header = ['temperature', 'runway_surface', 'gross_weight', 'altitude', 'wind', 'gradient',
+                    'accommodating_airports', '%commodating airpords']
+    df_for_hypo1 = pd.DataFrame(columns=hypo1_header)
+
+    for times in range(1, 1001):
+        randomSelector = RandomAttributeSelector(temp, runway_surface, gross_weight, altitude, wind, gradient, None,
+                                                 True)
         randomAttributeMap = randomSelector.__dict__
-
-        if randomAttributeMap['gross_weight'] == 'light':
-            min_distance = 5315
-        else:
-            min_distance = 6791
-
-        temp_effect = effect_by_temp(randomAttributeMap['temp'])
-        runway_surface_effect = effect_by_runway_surface(randomAttributeMap['runway_surface'])
-        gross_weight_effect = effect_by_gross_weight(randomAttributeMap['gross_weight'])
-        altitude_effect = effect_by_altitude(randomAttributeMap['altitude'])
-        wind_effect = effect_by_wind(randomAttributeMap['wind'])
-        gradient_effect = effect_by_gradient(randomAttributeMap['gradient'])
-        distance = (min_distance * temp_effect * runway_surface_effect * wind_effect * altitude_effect
-                    ) + gross_weight_effect + gradient_effect
-
-        if distance < min_distance:
-            # Not an optimum condition to fly
-            continue
-
-        hypo1_distance_list.append(distance)
+        ld, randomAttributeMap = mc_simulation(randomAttributeMap)
+        accommodating_airports = airport_df[airport_df['Length (ft)'] * 0.6 >= ld].shape[0]
+        total_airports = airport_df.shape[0]
+        percent_of_accommodating_airport = (accommodating_airports / total_airports) * 100
 
         df_data = [randomAttributeMap['temp'], randomAttributeMap['runway_surface'], randomAttributeMap['gross_weight'],
                    randomAttributeMap['altitude'],
-                   randomAttributeMap['wind'], randomAttributeMap['gradient'], distance]
+                   randomAttributeMap['wind'], randomAttributeMap['gradient'], accommodating_airports,
+                   percent_of_accommodating_airport]
         columns = pd.Series(df_data, index=df_for_hypo1.columns)
         df_for_hypo1 = df_for_hypo1.append(columns, ignore_index=True)
 
     df_for_hypo1.to_csv('hypo1.csv')
 
-    print(sum(hypo1_distance_list) / len(hypo1_distance_list))
+    # Hypo 2
 
-    hypo2_temp_effect = effect_by_temp(40)
-    hypo2_runway_surface_effect = effect_by_runway_surface('icy')
-    hypo2_gross_weight_effect = effect_by_gross_weight(randomAttributeMap['gross_weight'])
-    hypo2_altitude_effect = effect_by_altitude(14472)
-    hypo2_wind_effect = effect_by_wind('tailwind')
-    hypo2_gradient_effect = effect_by_gradient(random.randint(95, 100))
-    hypo2_distance = (min_distance * temp_effect * runway_surface_effect * wind_effect * altitude_effect
-                ) + gross_weight_effect + gradient_effect
-    max_change_at_extreme = (hypo2_distance - min_distance)/min_distance * 100
-    print("The runway length for this flight, under extreme conditions, would change by a percentage of ", round(max_change_at_extreme,2))
+    random_lat, random_long = random_direction()
+    airports_in_visinity_df_header = airport_df.columns
+    airports_in_visinity_df = pd.DataFrame(columns=airports_in_visinity_df_header)
+
+    hypo2_header = ['temperature', 'runway_surface', 'gross_weight', 'altitude', 'wind', 'gradient',
+                    'airports_within_visinity', 'accommodating_in_this_condition']
+    df_for_hypo2 = pd.DataFrame(columns=hypo2_header)
+
+    # 112.654kms when both engine fails
+    # https://www.telegraph.co.uk/travel/travel-truths/can-a-plane-fly-with-no-one-engines/#:~:text=Flying%20at%20a%20typical%20altitude,miles%20before%20reaching%20the%20ground.
+    # for 2500 tested with 100 random lat and long and took neareast 10 airports and found the avg distace
+    random_distance_available = random.randint(2000, 3500)
+    fixed_gross_weight = gross_weight.random_gross_weight()
+
+    for index, row in airport_df.iterrows():
+        airport_loc = row['Geographic Location']
+        lat_long = airport_loc.split(' ')
+        airport_lat, airport_long = float(create_lat_long(lat_long[0][:-1])) * get_sign(lat_long[0][-1]), float(
+            create_lat_long(lat_long[1][:-1])) * get_sign(lat_long[1][-1])
+
+        geoAns = geod.Inverse(airport_lat, airport_long, random_lat, random_long)
+        distance_btw_airports = float(geoAns['s12']) / 1000
+
+        if distance_btw_airports <= random_distance_available:
+            airports_in_visinity_df = airports_in_visinity_df.append(row, ignore_index=True)
 
 
-# notes-
+    airports_in_visinity_df.to_csv('airports_in_visinity_df.csv')
+    total_airport_in_visinity = airports_in_visinity_df.shape[0]
 
-# Hypo1-
-# the optimum runway distance at a perticular year. (input - year /  output - takeoff distance)
+    for times in range(1, 101):
+        randomSelector = RandomAttributeSelector(temp, runway_surface, gross_weight, altitude, wind, gradient, fixed_gross_weight,
+                                                 False)
+        randomAttributeMap = randomSelector.__dict__
+        ld, randomAttributeMap = mc_simulation(randomAttributeMap)
+        accommodating_airport_in_this_condition = airports_in_visinity_df[airports_in_visinity_df['Length (ft)']*.6>=ld].shape[0]
 
-# the optimum runway distance at an extreme condition would not deffer by xyz ft or will not be more than xyz feet.
+        df_data = [randomAttributeMap['temp'], randomAttributeMap['runway_surface'], randomAttributeMap['gross_weight'],
+                   randomAttributeMap['altitude'],
+                   randomAttributeMap['wind'], randomAttributeMap['gradient'], total_airport_in_visinity,
+                   accommodating_airport_in_this_condition]
+        columns = pd.Series(df_data, index=df_for_hypo2.columns)
+        df_for_hypo2 = df_for_hypo2.append(columns, ignore_index=True)
+
+    df_for_hypo2.to_csv('hypo2.csv')
+
+
+
+            # for times in range(1, 1001):
+            #     ld, randomAttributeMap = mc_simulation(temp, runway_surface, gross_weight, altitude, wind, gradient)
+            #     if row['Length (ft)']*.6 >= ld:
+
+
+
