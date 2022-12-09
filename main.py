@@ -8,14 +8,10 @@ geod = Geodesic.WGS84
 
 class RandomAttributeSelector():
 
-    def __init__(self, temp, runway_surface, gross_weight, altitude, wind, gradient, gross_weight_fixed,
-                 gross_weight_to_be_changed=False):
+    def __init__(self, temp, runway_surface, gross_weight, altitude, wind, gradient):
         self.temp = temp.random_temperature()
         self.runway_surface = runway_surface.random_runway_surface()
-        if gross_weight_to_be_changed:
-            self.gross_weight = gross_weight.random_gross_weight()
-        else:
-            self.gross_weight = gross_weight_fixed
+        self.gross_weight = gross_weight.random_gross_weight()
         self.altitude = altitude.random_altitude()
         self.wind = wind.random_wind()
         self.gradient = gradient.random_gradient()
@@ -225,10 +221,17 @@ def get_sign(direction):
 
 
 def create_lat_long(lat_long):
-    return lat_long[:2] + '.' + lat_long[2:]
+    lat_long = lat_long.split(' ')
+    direction_lat = lat_long[0][-1]
+    direction_long = lat_long[1][-1]
+    lat = lat_long[0][:-1]
+    long = lat_long[1][:-1]
+    float_lat = float(lat[:2] + '.' + lat[2:])
+    float_long = float(long[:2] + '.' + long[2:])
+    return float_lat * get_sign(direction_lat), float_long * get_sign(direction_long)
 
 
-def mc_simulation(randomAttributeMap):
+def mc_simulation(randomAttributeMap, hypo_type):
     if randomAttributeMap['gross_weight'] == 'light':
         min_distance = 4800
     else:
@@ -240,35 +243,57 @@ def mc_simulation(randomAttributeMap):
     altitude_effect = effect_by_altitude(randomAttributeMap['altitude'])
     wind_effect = effect_by_wind(randomAttributeMap['wind'])
     gradient_effect = effect_by_gradient(randomAttributeMap['gradient'])
-    ld = (min_distance * temp_effect * runway_surface_effect * wind_effect * altitude_effect
-          ) + gross_weight_effect + gradient_effect
+    if hypo_type == '1':
+
+        ld = (min_distance * temp_effect * runway_surface_effect * wind_effect * altitude_effect
+              ) + gross_weight_effect + gradient_effect
+    else:
+        ld = (min_distance * temp_effect * runway_surface_effect * wind_effect * altitude_effect
+              ) + gross_weight_effect
     return ld, randomAttributeMap
 
+
 def get_nearest_accomodating_airport(curr_pos_lat, curr_pos_long):
-    nearest_airport = 0
+    nearest_airport = float('inf')
 
     for index, row in airport_df.iterrows():
         airport_loc = row['Geographic Location']
-        airport_altitude = row['Elevation(ft)']
+        airport_altitude = row['Elevation (ft)']
         runway_lenght = row['Length (ft)']
 
-        lat_long = airport_loc.split(' ')
-        airport_lat, airport_long = float(create_lat_long(lat_long[0][:-1])) * get_sign(lat_long[0][-1]), float(
-            create_lat_long(lat_long[1][:-1])) * get_sign(lat_long[1][-1])
+        airport_lat, airport_long = create_lat_long(airport_loc)
 
         geoAns = geod.Inverse(airport_lat, airport_long, curr_pos_lat, curr_pos_long)
         dist_btw_currpos_and_airport = float(geoAns['s12']) / 1000
 
-        #change temp by 10deg range, altitude fixed, runway_surface fixed, gross_weight fixed, random gradient
-        randomSelector = RandomAttributeSelector(temp, runway_surface, gross_weight, altitude, wind, gradient)
-        randomAttributeMap = randomSelector.__dict__
-        ld, randomAttributeMap = mc_simulation(randomAttributeMap)
+        random_attribute_map = {'temp': random.randint(15, 20), 'runway_surface': 'normal', 'gross_weight': 'medium',
+                                'altitude': airport_altitude, 'wind': 'headwind', 'gradient': 75}
+        ld, random_attribute_map = mc_simulation(random_attribute_map, '2')
 
-        if runway_lenght*0.6 > ld:
+        if runway_lenght * 0.6 > ld:
             if dist_btw_currpos_and_airport < nearest_airport:
                 nearest_airport = dist_btw_currpos_and_airport
 
     return nearest_airport
+
+
+def get_flight_path(airport_df):
+    while True:
+        two_airports = airport_df.sample(n=2)
+        two_airports =  two_airports.reset_index()
+        airport1 = two_airports.iloc[0]['Geographic Location']
+        airport2 = two_airports.iloc[1]['Geographic Location']
+        lat1, long1 = create_lat_long(airport1)
+        lat2, long2 = create_lat_long(airport2)
+        geoAns = geod.Inverse(lat1, long1, lat2, long2)
+        dist_btw_airports = float(geoAns['s12']) / 1000
+        if dist_btw_airports <= 6570:
+            break
+
+    return lat1, long1, lat2, long2
+
+
+
 
 
 if __name__ == '__main__':
@@ -291,10 +316,9 @@ if __name__ == '__main__':
     df_for_hypo1 = pd.DataFrame(columns=hypo1_header)
 
     for times in range(1, 1001):
-        randomSelector = RandomAttributeSelector(temp, runway_surface, gross_weight, altitude, wind, gradient, None,
-                                                 True)
+        randomSelector = RandomAttributeSelector(temp, runway_surface, gross_weight, altitude, wind, gradient)
         randomAttributeMap = randomSelector.__dict__
-        ld, randomAttributeMap = mc_simulation(randomAttributeMap)
+        ld, randomAttributeMap = mc_simulation(randomAttributeMap, '1')
         accommodating_airports = airport_df[airport_df['Length (ft)'] * 0.6 >= ld].shape[0]
         total_airports = airport_df.shape[0]
         percent_of_accommodating_airport = (accommodating_airports / total_airports) * 100
@@ -315,37 +339,32 @@ if __name__ == '__main__':
 
     df_for_hypo2 = pd.DataFrame(columns=hypo2_header)
 
-    takeoff_lat = 40.1
-    takeoff_long = 116.6
-    destination_lat = 37.6
-    destination_long = -122.4
-
+    takeoff_lat, takeoff_long, destination_lat, destination_long = get_flight_path(airport_df)
 
     l = geod.InverseLine(takeoff_lat, takeoff_long, destination_lat, destination_long)
     ds = 100e3;
     n = int(math.ceil(l.s13 / ds))
     for i in range(n + 1):
         if i == 0:
-            print("curr_lat curr_long")
+            pass
+            # print("curr_lat curr_long")
         s = min(ds * i, l.s13)
         g = l.Position(s, Geodesic.STANDARD | Geodesic.LONG_UNROLL)
         curr_pos_lat = g['lat2']
         curr_pos_long = g['lon2']
-        distance_to_nearest_airport  = get_nearest_accomodating_airport(curr_pos_lat, curr_pos_long)
-        df_data= [takeoff_lat, takeoff_long, destination_lat, destination_long, curr_pos_lat, curr_pos_long, distance_to_nearest_airport]
+        # print(curr_pos_lat, curr_pos_long)
+        distance_to_nearest_airport = get_nearest_accomodating_airport(curr_pos_lat, curr_pos_long)
+        df_data = [takeoff_lat, takeoff_long, destination_lat, destination_long, curr_pos_lat, curr_pos_long,
+                   distance_to_nearest_airport]
         columns = pd.Series(df_data, index=df_for_hypo2.columns)
         df_for_hypo2 = df_for_hypo2.append(columns, ignore_index=True)
 
-
-
-
-
+    df_for_hypo2.to_csv('hypo2.csv')
+    print(df_for_hypo2.describe())
 
     # 112.654kms when both engine fails
     # https://www.telegraph.co.uk/travel/travel-truths/can-a-plane-fly-with-no-one-engines/#:~:text=Flying%20at%20a%20typical%20altitude,miles%20before%20reaching%20the%20ground.
     # for 2500 tested with 100 random lat and long and took nearest 10 airports and found the avg distance
-
-
 
     # total_airport_in_vicinity = airports_in_vicinity_df.shape[0]
     #
