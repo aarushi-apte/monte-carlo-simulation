@@ -2,6 +2,7 @@ import math
 import random
 import pandas as pd
 from geographiclib.geodesic import Geodesic
+import matplotlib.pyplot as plt
 
 geod = Geodesic.WGS84
 
@@ -22,14 +23,14 @@ class TemperaturePredictor:
     def __init__(self):
         # https://www.washingtonpost.com/news/capital-weather-gang/wp/2018/07/27/sometimes-its-too-hot-for-airplanes-to-fly-heres-why/#:~:text=Every%20plane%20has%20a%20different,at%20more%20than%20174%2C200%20pounds.
         # https://www.cntraveler.com/stories/2016-06-20/its-so-hot-some-planes-cant-fly-heres-why
-        self.temperature = []
+        self.temperature = random.choices(['freezing', 'cold', 'pleasant', 'hot', 'extreme'], weights=(20, 80, 120, 60,
+                                                                                                       20), k=1)
+        self.change_count = 0
 
     def random_temperature(self):
-        minRange = -13
-        maxRange = 40
-
-        self.temperature = random.randint(int(minRange), int(maxRange))
-        return self.temperature
+        self.temperature = random.choices(['freezing', 'cold', 'pleasant', 'hot', 'extreme'], weights=(5, 60, 120, 60,
+                                                                                                       20), k=1)
+        return self.temperature[0]
 
 
 class RunwaySurfacePredictor:
@@ -66,20 +67,17 @@ class GrossWeightPredictor:
 
 
 class AltitudePredictor:
-    # choose from a dataset
-    # if not this should "median of all 1000ft,  pert distribution.
-
-    # # https://en.wikipedia.org/wiki/List_of_highest_airports
+    # Choosing altitude distribution as per our dataset and the mean value of all the rows
     def __init__(self):
-        self.altitude = random.randint(0, 14472)
+        self.altitude = random.choices(['low', 'normal', 'high'], weights=(7, 100, 5), k=1)
         self.change_count = 0
 
     def random_altitude(self):
         if self.change_count % 1 == 0:
-            self.altitude = random.randint(0, 14472)
+            self.altitude = random.choices(['low', 'normal', 'high'], weights=(7, 100, 5), k=1)
 
         self.change_count += 1
-        return self.altitude
+        return self.altitude[0]
 
 
 class WindPredictor:
@@ -95,7 +93,7 @@ class WindPredictor:
 class GradientPredictor:
 
     def __init__(self):
-        self.gradient = random.uniform(50, 100)
+        self.gradient = random.randint(50, 100)
         self.change_count = 0
 
     def random_gradient(self):
@@ -109,11 +107,23 @@ class GradientPredictor:
 def effect_by_temp(temperature):
     # https://www.experimentalaircraft.info/flight-planning/aircraft-performance-7.php
     isa_base = 15
-    if temperature < isa_base:
-        temp_diff = (abs(temperature - isa_base)) / 10
+
+    if temperature == 'freezing':
+        temp = random.randint(-50, -20)
+    elif temperature == 'cold':
+        temp = random.randint(-20, 10)
+    elif temperature == 'pleasant':
+        temp = random.randint(10, 30)
+    elif temperature == 'hot':
+        temp = random.randint(30, 40)
+    else:
+        temp = random.randint(40, 50)
+
+    if temp < isa_base:
+        temp_diff = (abs(temp - isa_base)) / 10
         distance_percent = 1 - (0.05 * temp_diff)
-    elif temperature > isa_base:
-        temp_diff = (temperature - isa_base) / 10
+    elif temp > isa_base:
+        temp_diff = (temp - isa_base) / 10
         distance_percent = 1 + (0.05 * temp_diff)
     else:
         distance_percent = 1
@@ -166,7 +176,17 @@ def effect_by_gross_weight(gross_weight):
 
 def effect_by_altitude(altitude):
     # https://www.faa.gov/regulations_policies/handbooks_manuals/aviation/phak/media/13_phak_ch11.pdf
-    distance_multiply = (0.035 * (altitude / 1000)) + 1
+
+    if altitude == 'low':
+        alt = random.randint(-14, 0)
+        distance_multiply = (0.035 * (alt / 1000)) + 1
+    elif altitude == 'normal':
+        alt = random.randint(0, 1000)
+        distance_multiply = (0.035 * (alt / 1000)) + 1
+    else:
+        alt = random.randint(1000, 8355)
+        distance_multiply = (0.035 * (alt / 1000)) + 1
+
     return distance_multiply
 
 
@@ -253,13 +273,13 @@ def mc_simulation(randomAttributeMap, hypo_type):
     return ld, randomAttributeMap
 
 
-def get_nearest_accomodating_airport(curr_pos_lat, curr_pos_long):
+def get_nearest_accommodating_airport(curr_pos_lat, curr_pos_long):
     nearest_airport = float('inf')
 
     for index, row in airport_df.iterrows():
         airport_loc = row['Geographic Location']
         airport_altitude = row['Elevation (ft)']
-        runway_lenght = row['Length (ft)']
+        runway_length = row['Length (ft)']
 
         airport_lat, airport_long = create_lat_long(airport_loc)
 
@@ -270,7 +290,7 @@ def get_nearest_accomodating_airport(curr_pos_lat, curr_pos_long):
                                 'altitude': airport_altitude, 'wind': 'headwind', 'gradient': 75}
         ld, random_attribute_map = mc_simulation(random_attribute_map, '2')
 
-        if runway_lenght * 0.6 > ld:
+        if runway_length * 0.6 > ld:
             if dist_btw_currpos_and_airport < nearest_airport:
                 nearest_airport = dist_btw_currpos_and_airport
 
@@ -280,7 +300,7 @@ def get_nearest_accomodating_airport(curr_pos_lat, curr_pos_long):
 def get_flight_path(airport_df):
     while True:
         two_airports = airport_df.sample(n=2)
-        two_airports =  two_airports.reset_index()
+        two_airports = two_airports.reset_index()
         airport1 = two_airports.iloc[0]['Geographic Location']
         airport2 = two_airports.iloc[1]['Geographic Location']
         lat1, long1 = create_lat_long(airport1)
@@ -293,7 +313,23 @@ def get_flight_path(airport_df):
     return lat1, long1, lat2, long2
 
 
+def plot_hypo2(min, max, mean):
+    # https://www.geeksforgeeks.org/adding-value-labels-on-a-matplotlib-bar-chart/
+    x = [1, 2, 3]
+    y = [min, mean, max]
 
+    tick_label = ['Min', 'Mean', 'Max']
+    plt.bar(x, y, tick_label=tick_label,
+            width=0.8, color=['green', 'blue', 'orange'])
+
+    for i in range(len(x)):
+        plt.text(i+1, y[i], y[i], ha='center')
+
+    plt.xlabel('x - axis')
+    plt.ylabel('Distance')
+
+    plt.title('The Minimum, Mean & Maximum Distance to the Nearest Airport.')
+    plt.show()
 
 
 if __name__ == '__main__':
@@ -309,10 +345,9 @@ if __name__ == '__main__':
     wind = WindPredictor()
     gradient = GradientPredictor()
 
-    # Hypo 1
-
+    # Hypothesis 1
     hypo1_header = ['temperature', 'runway_surface', 'gross_weight', 'altitude', 'wind', 'gradient',
-                    'accommodating_airports', 'accommodating airports']
+                    'accommodating_airports', '% of accommodating airports']
     df_for_hypo1 = pd.DataFrame(columns=hypo1_header)
 
     for times in range(1, 1001):
@@ -322,7 +357,6 @@ if __name__ == '__main__':
         accommodating_airports = airport_df[airport_df['Length (ft)'] * 0.6 >= ld].shape[0]
         total_airports = airport_df.shape[0]
         percent_of_accommodating_airport = (accommodating_airports / total_airports) * 100
-
         df_data = [randomAttributeMap['temp'], randomAttributeMap['runway_surface'], randomAttributeMap['gross_weight'],
                    randomAttributeMap['altitude'],
                    randomAttributeMap['wind'], randomAttributeMap['gradient'], accommodating_airports,
@@ -331,9 +365,11 @@ if __name__ == '__main__':
         df_for_hypo1 = df_for_hypo1.append(columns, ignore_index=True)
 
     df_for_hypo1.to_csv('hypo1.csv')
+    hypo_1_result = sum(df_for_hypo1['% of accommodating airports']) / len(df_for_hypo1['% of accommodating airports'])
+    print("Considering all given situation,an average of {}% of airports can accommodate the various types of flights.".
+          format(round(hypo_1_result, 2)))
 
-    # Hypo 2
-
+    # Hypothesis 2
     hypo2_header = ['arrival_lat', 'arrival_long', 'destination_lat', 'destination_long', 'curr_lat', 'curr_long',
                     'nearest_airport_distance']
 
@@ -347,20 +383,25 @@ if __name__ == '__main__':
     for i in range(n + 1):
         if i == 0:
             pass
-            # print("curr_lat curr_long")
         s = min(ds * i, l.s13)
         g = l.Position(s, Geodesic.STANDARD | Geodesic.LONG_UNROLL)
         curr_pos_lat = g['lat2']
         curr_pos_long = g['lon2']
         # print(curr_pos_lat, curr_pos_long)
-        distance_to_nearest_airport = get_nearest_accomodating_airport(curr_pos_lat, curr_pos_long)
+        distance_to_nearest_airport = get_nearest_accommodating_airport(curr_pos_lat, curr_pos_long)
         df_data = [takeoff_lat, takeoff_long, destination_lat, destination_long, curr_pos_lat, curr_pos_long,
                    distance_to_nearest_airport]
         columns = pd.Series(df_data, index=df_for_hypo2.columns)
         df_for_hypo2 = df_for_hypo2.append(columns, ignore_index=True)
 
     df_for_hypo2.to_csv('hypo2.csv')
-    print(df_for_hypo2.describe())
+    hypo2_description = df_for_hypo2.describe()
+    minimum_distance = round(hypo2_description['nearest_airport_distance']['min'], 2)
+    maximum_distance = round(hypo2_description['nearest_airport_distance']['max'], 2)
+    mean_distance = round(hypo2_description['nearest_airport_distance']['mean'], 2)
+    plot_hypo2(minimum_distance, maximum_distance, mean_distance)
+
+
 
     # 112.654kms when both engine fails
     # https://www.telegraph.co.uk/travel/travel-truths/can-a-plane-fly-with-no-one-engines/#:~:text=Flying%20at%20a%20typical%20altitude,miles%20before%20reaching%20the%20ground.
