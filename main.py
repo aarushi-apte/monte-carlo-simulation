@@ -348,6 +348,9 @@ def create_lat_long(lat_long):
 
 
 def mc_simulation(randomAttributeMap, hypo_type):
+    """
+    This function runs our simulation for the one of the two hypotheses based on the current selection
+    """
     if randomAttributeMap['gross_weight'] == 'light':
         min_distance = 4800
     else:
@@ -424,6 +427,12 @@ def get_flight_path(airport_df):
 
 
 def plot_hypo2(min, max, mean):
+    """
+    This function creates a plot that shows us the minimum, maximum and mean distance to the nearest airport.
+    :param min: minimum distance to the nearest airport
+    :param max: maximum distance to the nearest airport
+    :param mean: mean distance to the nearest airport
+    """
     # https://www.geeksforgeeks.org/adding-value-labels-on-a-matplotlib-bar-chart/
     x = [1, 2, 3]
     y = [min, mean, max]
