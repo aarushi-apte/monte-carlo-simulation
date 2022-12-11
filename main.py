@@ -84,7 +84,6 @@ class WindPredictor:
 
     def __init__(self):
         self.wind = []
-
     def random_wind(self):
         self.wind = random.choices(['headwind', 'tailwind', 'crosswind'], weights=(80, 40, 10), k=1)
         return self.wind[0]
@@ -105,6 +104,22 @@ class GradientPredictor:
 
 
 def effect_by_temp(temperature):
+    """
+    In this function, we first identify which category a particular temperature belongs to and generate
+    a random temperature that falls under that category range.
+    Following are the temperature categories and their ranges:
+    1. Freezing : -50C to -20C
+    2. Cold : -20C to 10C
+    3. Pleasant : 10C to 30C
+    4. Hot : 30C to 40C
+    5. Extreme : 40C to 50C
+
+    After a random temperature value has been generated, we calculate its difference from ISA (International
+    Standard Atmosphere) and finally calculate how the landing distance is affected by temperature conditions.
+
+    :param temperature: a string value which tells us the temperature category
+    :return: returns a value that tells us how the landing distance is affected by temperature condition
+    """
     # https://www.experimentalaircraft.info/flight-planning/aircraft-performance-7.php
     isa_base = 15
 
@@ -131,6 +146,20 @@ def effect_by_temp(temperature):
 
 
 def effect_by_runway_surface(runway_surface):
+    """
+    In this function, we calculate how the runway surface affects the landing distance of an airplane
+    There are five different categories and each affects the runway distance in the following range:
+    1. Normal : 1
+    2. Wet : 1.3 - 1.4
+    3. Standing Water : 2 - 2.3
+    4. Snow : 1.6 - 1.7
+    5. Icy : 3.5 - 4.5
+
+    We randomly generate multiplying factor from the range of a particular surface.
+
+    :param runway_surface: a string value that tells us about the runway surface condition
+    :return: a value that tells us how the landing distance is affected by runway surface
+    """
     if runway_surface == "normal":
         distance_multiply = 1
     elif runway_surface == "wet":
@@ -146,6 +175,17 @@ def effect_by_runway_surface(runway_surface):
 
 
 def effect_by_gross_weight(gross_weight):
+    """
+    The function calculates how the landing distance changes based on the weight of the plane by
+    randomizing the minimum and maximum weight in a particular category
+    Here the weight of the airplane is classified into four main categories:
+    1. light - 83000 to 129200 lbs
+    2. medium - 91300 to 146300 lbs
+    3. heavy - 93680 to 147300 lbs
+    4. super - 98495 to 138450 lbs
+    :param gross_weight: a string that tells us the category of the airplane weight
+    :return: returns the effect of the plane weight on the landing distance
+    """
     # Weight limitations - https://simpleflying.com/boeing-737-family-variants-weight-differences/
     # https://www.experimentalaircraft.info/flight-planning/aircraft-performance-7.php
     def weight_distance_calculator(min_weight, max_weight, min_runway):
@@ -175,6 +215,17 @@ def effect_by_gross_weight(gross_weight):
 
 
 def effect_by_altitude(altitude):
+    """
+    Here we take as input the altitude above sea level as a category. Then we generate a random altitude based
+    on the range of the corresponding category. Finally, we calculate the effect of that altitude on the landing
+    distance.
+    We have considered the following categories for altitude:
+    1. low : -14 to 0
+    2. normal : 0 to 1000
+    3. high : 1000 to 8355
+    :param altitude: the string that gives us the altitude category
+    :return: we return the factor by which the altitude changes the landing distance
+    """
     # https://www.faa.gov/regulations_policies/handbooks_manuals/aviation/phak/media/13_phak_ch11.pdf
 
     if altitude == 'low':
@@ -191,6 +242,15 @@ def effect_by_altitude(altitude):
 
 
 def effect_by_wind(wind):
+    """
+    In this function we calculate the effect of wind in kt on the landing distance
+    We have considered three types of wind:
+    1. Headwind
+    2. Tailwind
+    3. Crosswind (in case of crosswind we randomize the angle of wind as well)
+    :param wind: a srting that tells us what type of wind it is
+    :return: it retunns a value to tell us how wind affects landing distance
+    """
     # https://www.faa.gov/regulations_policies/handbooks_manuals/aviation/phak/media/13_phak_ch11.pdf
     # https://www.aviation.govt.nz/assets/publications/gaps/Take-off-and-landing-performance.pdf
     def calculating_wind(max_wind):
@@ -223,6 +283,14 @@ def effect_by_wind(wind):
 
 
 def effect_by_gradient(runway_gradient):
+    """
+    This function calculates the effect of gradient which is the difference between the highest and lowest point
+    on the runway on the landing distance of an airplane
+    :param runway_gradient: the difference between the highest and lowest point on the runway
+    :return: it returns the distance that needs to be added to the original landing distance
+    >>> effect_by_gradient(60)
+    600
+    """
     # https://www.portofbellingham.com/DocumentCenter/View/7196/Revised-Runway-Length-Discussion-20171206?bidId=
 
     distance_to_add = runway_gradient * 10
