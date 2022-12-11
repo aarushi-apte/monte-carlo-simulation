@@ -468,6 +468,7 @@ if __name__ == '__main__':
     maximum_distance = round(hypo2_description['nearest_airport_distance']['max'], 2)
     mean_distance = round(hypo2_description['nearest_airport_distance']['mean'], 2)
     plot_hypo2(minimum_distance, maximum_distance, mean_distance)
+    print(f"A flight from {takeoff_lat, takeoff_long} to {destination_lat, destination_long}, will encounter a \nminimum distance of {minimum_distance} kms, \nmean distance of {mean_distance} kms and \nmaximum distance of {maximum_distance} kms \nto the nearest airport along the entire route for an emergency landing that could accommodate the landing distance required by it.")
 
 
 
