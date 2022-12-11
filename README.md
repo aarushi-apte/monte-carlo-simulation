@@ -32,16 +32,16 @@ The purpose of this Monte Carlo Simulation is to calculate the landing distance 
 
 - **Wind:**
 There are three types of winds that we have considered
-    - Headwind
-    - Tailwind
-    - Crosswind
+    - Headwind : it reduces the landing distance
+    - Tailwind : it increases the landing distance
+    - Crosswind : it reduces the landing distance or has no effect at all
 - **Runway Surface:**
 The Runway Surface greatly affects the landing distance that is required by a flight. These are categorised into 4 types:
-    - Normal
-    - Wet
-    - Standing Water
-    - Snow
-    - Icy
+    - Normal : 1 
+    - Wet : 1.3 to 1.4
+    - Standing Water : 2 to 2.3
+    - Snow : 1.6 to 1.7
+    - Icy : 3.5 to 4.5
 - **Surface Gradient:** The landing distance increases by 10 feet for every foot difference between highest and lowest point
 - **Gross Weight:** The Boeing 737 flights have been classified under four types:
     - Light
