@@ -470,15 +470,15 @@ if __name__ == '__main__':
     df_for_hypo1 = pd.DataFrame(columns=hypo1_header)
 
     for times in range(1, 1001):
-        randomSelector = RandomAttributeSelector(temp, runway_surface, gross_weight, altitude, wind, gradient)
-        randomAttributeMap = randomSelector.__dict__
-        ld, randomAttributeMap = mc_simulation(randomAttributeMap, '1')
+        random_selector = RandomAttributeSelector(temp, runway_surface, gross_weight, altitude, wind, gradient)
+        random_attribute_map = random_selector.__dict__
+        ld, random_attribute_map = mc_simulation(random_attribute_map, '1')
         accommodating_airports = airport_df[airport_df['Length (ft)'] * 0.6 >= ld].shape[0]
         total_airports = airport_df.shape[0]
         percent_of_accommodating_airport = (accommodating_airports / total_airports) * 100
-        df_data = [randomAttributeMap['temp'], randomAttributeMap['runway_surface'], randomAttributeMap['gross_weight'],
-                   randomAttributeMap['altitude'],
-                   randomAttributeMap['wind'], randomAttributeMap['gradient'], accommodating_airports,
+        df_data = [random_attribute_map['temp'], random_attribute_map['runway_surface'], random_attribute_map['gross_weight'],
+                   random_attribute_map['altitude'],
+                   random_attribute_map['wind'], random_attribute_map['gradient'], accommodating_airports,
                    percent_of_accommodating_airport]
         columns = pd.Series(df_data, index=df_for_hypo1.columns)
         df_for_hypo1 = df_for_hypo1.append(columns, ignore_index=True)
@@ -520,32 +520,3 @@ if __name__ == '__main__':
     plot_hypo2(minimum_distance, maximum_distance, mean_distance)
     print(f"A flight from {takeoff_lat, takeoff_long} to {destination_lat, destination_long}, will encounter a \nminimum distance of {minimum_distance} kms, \nmean distance of {mean_distance} kms and \nmaximum distance of {maximum_distance} kms \nto the nearest airport along the entire route for an emergency landing that could accommodate the landing distance required by it.")
 
-
-
-    # 112.654kms when both engine fails
-    # https://www.telegraph.co.uk/travel/travel-truths/can-a-plane-fly-with-no-one-engines/#:~:text=Flying%20at%20a%20typical%20altitude,miles%20before%20reaching%20the%20ground.
-    # for 2500 tested with 100 random lat and long and took nearest 10 airports and found the avg distance
-
-    # total_airport_in_vicinity = airports_in_vicinity_df.shape[0]
-    #
-    # for times in range(1, 101):
-    #     randomSelector = RandomAttributeSelector(temp, runway_surface, gross_weight, altitude, wind, gradient,
-    #                                              fixed_gross_weight,
-    #                                              False)
-    #     randomAttributeMap = randomSelector.__dict__
-    #     ld, randomAttributeMap = mc_simulation(randomAttributeMap)
-    #     accommodating_airport_in_this_condition = \
-    #     airports_in_vicinity_df[airports_in_vicinity_df['Length (ft)'] * .6 >= ld].shape[0]
-    #
-    #     df_data = [randomAttributeMap['temp'], randomAttributeMap['runway_surface'], randomAttributeMap['gross_weight'],
-    #                randomAttributeMap['altitude'],
-    #                randomAttributeMap['wind'], randomAttributeMap['gradient'], total_airport_in_vicinity,
-    #                accommodating_airport_in_this_condition]
-    #     columns = pd.Series(df_data, index=df_for_hypo2.columns)
-    #     df_for_hypo2 = df_for_hypo2.append(columns, ignore_index=True)
-
-    # df_for_hypo2.to_csv('hypo2.csv')
-
-    # for times in range(1, 1001):
-    #     ld, randomAttributeMap = mc_simulation(temp, runway_surface, gross_weight, altitude, wind, gradient)
-    #     if row['Length (ft)']*.6 >= ld:

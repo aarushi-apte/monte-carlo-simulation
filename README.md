@@ -19,7 +19,12 @@ The purpose of this Monte Carlo Simulation is to calculate the landing distance 
 ## Hypotheses
 
 - The difference in the number of airports a flight can land on under usual conditions compared to the ones it can land on under dynamic conditions will not be more than 15%.
+
+![Hypothesis 1](./Hypo1.png)
+
 - When an aircraft is flying from one destination to another, there will be multiple airports in its path where it can land on in case of an emergency. The maximum and minimum distance to any accommodating airport to the flight will not have a difference of more than 10%.
+
+![Hypothesis 2 Plot](./Hypo2.png)
 
 ## Assumptions
 
