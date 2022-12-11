@@ -28,6 +28,10 @@ class TemperaturePredictor:
         self.change_count = 0
 
     def random_temperature(self):
+        """
+        This function randomizes the temperature category using random choices based on the weights assigned
+        to them
+        """
         self.temperature = random.choices(['freezing', 'cold', 'pleasant', 'hot', 'extreme'], weights=(5, 60, 120, 60,
                                                                                                        20), k=1)
         return self.temperature[0]
@@ -41,6 +45,10 @@ class RunwaySurfacePredictor:
         self.change_count = 0
 
     def random_runway_surface(self):
+        """
+        This function randomizes the runway surface after every 10 iterations using random choices
+        based on the weights assigned to them
+        """
         if self.change_count % 10 == 0:
             self.runway_surface = random.choices(['normal', 'wet', 'standing_water', 'snow', 'icy'],
                                                  weights=(80, 60, 40, 30, 22), k=1)
@@ -59,6 +67,10 @@ class GrossWeightPredictor:
         self.change_count = 0
 
     def random_gross_weight(self):
+        """
+        This function randomizes the weight category after every 3 iterations using random choices
+        based on the weights assigned to them
+        """
         if self.change_count % 3 == 0:
             self.gross_weight = random.choices(['light', 'medium', 'heavy', 'super'], weights=(40, 50, 30, 20), k=1)
 
@@ -73,6 +85,9 @@ class AltitudePredictor:
         self.change_count = 0
 
     def random_altitude(self):
+        """
+        This function randomizes the altitude category using random choices based on the weights assigned to them
+        """
         if self.change_count % 1 == 0:
             self.altitude = random.choices(['low', 'normal', 'high'], weights=(7, 100, 5), k=1)
 
@@ -85,6 +100,9 @@ class WindPredictor:
     def __init__(self):
         self.wind = []
     def random_wind(self):
+        """
+        This function randomizes the wind type using random choices based on the weights assigned to them
+        """
         self.wind = random.choices(['headwind', 'tailwind', 'crosswind'], weights=(80, 40, 10), k=1)
         return self.wind[0]
 
@@ -96,6 +114,9 @@ class GradientPredictor:
         self.change_count = 0
 
     def random_gradient(self):
+        """
+        This function randomizes the gradient after every 10 iterations using randint
+        """
         if self.change_count % 10 == 0:
             self.gradient = random.randint(50, 100)
 
@@ -303,6 +324,13 @@ def random_direction():
 
 
 def get_sign(direction):
+    """
+    A simple functions that returns a boolean based on the direction
+    :param direction: a symbol for the direction
+    :return: returns a boolean based on the direction
+    >>> get_sign('N')
+    1
+    """
     if direction == 'W' or direction == 'S':
         return -1
     return 1
