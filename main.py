@@ -370,6 +370,14 @@ def mc_simulation(randomAttributeMap, hypo_type):
 
 
 def get_nearest_accommodating_airport(curr_pos_lat, curr_pos_long):
+    """
+    This function iterates through the airport dataset and finds the closest airport that can accomodate
+    the current flight's landing distance
+    location
+    :param curr_pos_lat: the latitude of the current position
+    :param curr_pos_long: the longitude of the current position
+    :return: it returns the nearest airport that can accommodate the flight
+    """
     nearest_airport = float('inf')
 
     for index, row in airport_df.iterrows():
@@ -394,6 +402,12 @@ def get_nearest_accommodating_airport(curr_pos_lat, curr_pos_long):
 
 
 def get_flight_path(airport_df):
+    """
+    This function iterates through the airport dataset and checks if the distance between those airports
+    is less than 6570, if yes, we return the location coordinates of those two airports
+    :param airport_df: the airport information dataset
+    :return: returns the latitude and longitude of the two airports
+    """
     while True:
         two_airports = airport_df.sample(n=2)
         two_airports = two_airports.reset_index()
@@ -472,7 +486,6 @@ if __name__ == '__main__':
     df_for_hypo2 = pd.DataFrame(columns=hypo2_header)
 
     takeoff_lat, takeoff_long, destination_lat, destination_long = get_flight_path(airport_df)
-
     l = geod.InverseLine(takeoff_lat, takeoff_long, destination_lat, destination_long)
     ds = 100e3;
     n = int(math.ceil(l.s13 / ds))
