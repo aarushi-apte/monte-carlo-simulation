@@ -22,9 +22,13 @@ The purpose of this Monte Carlo Simulation is to calculate the landing distance 
 
 ![Hypothesis 1](./Hypo1.png)
 
+    From the image above we can see that the difference is under 15%. Hence we accept the null hypothesis.
+
 - When an aircraft is flying from one destination to another, there will be multiple airports in its path where it can land on in case of an emergency. The maximum and minimum distance to any accommodating airport to the flight will not have a difference of more than 10%.
 
 ![Hypothesis 2 Plot](./Hypo2.png)
+
+    We can see from the plot that the hypothesis is rejected here.
 
 ## Assumptions
 
